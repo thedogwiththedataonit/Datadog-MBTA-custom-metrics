@@ -141,14 +141,13 @@ def schedule(route, stop, bound):
     list_of_trip_ids = []
 
     for i in range(0, len(data["data"])):
-        if (data["data"][i]["attributes"]["arrival_time"] != None):
-            departure_time = data["data"][i]["attributes"]["arrival_time"]
+        if (data["data"][i]["attributes"]["departure_time"] != None):
+            departure_time = data["data"][i]["attributes"]["departure_time"]
             trip = data["data"][i]["relationships"]["trip"]["data"]["id"]
             new_departure_time = datetime.datetime.strptime(departure_time, "%Y-%m-%dT%H:%M:%S%z")
             current_time = datetime.datetime.now().strftime("%H:%M")
             time_difference = datetime.datetime.strptime(departure_time[11:16], "%H:%M") - datetime.datetime.strptime(current_time, "%H:%M")
             minute_difference = time_difference.seconds // 60
-
             list_of_departures.append(new_departure_time.strftime("%I:%M %p"))
             list_of_times_till.append(minute_difference)
             list_of_trip_ids.append(trip)
@@ -190,8 +189,8 @@ def predict_stop(stop, bound, trip):
 
 
 print(alerts_route("CR-Worcester", "place-WML-0035", "NEC-2287"))
-print(schedule("CR-Worcester", "place-WML-0035", 0))
-print(schedule("CR-Worcester", "NEC-2287", 1))
+print(schedule("CR-Worcester", "place-WML-0035", 1))
+print(schedule("CR-Worcester", "NEC-2287", 0))
 
 #the pm and AM doesnt work for metrics, maybe make it a log then into a metric or something
 
