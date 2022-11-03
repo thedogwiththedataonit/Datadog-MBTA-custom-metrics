@@ -77,6 +77,8 @@ def south_station_to_boston_landing():
     id = "NEC-2287"
     bound = 0
     results = get_predictions(id, bound)
+    if (results["data"] == []):
+        return "No trains", 0
     departure_time = results["data"][0]["attributes"]["departure_time"]
     new_departure_time = datetime.datetime.strptime(departure_time, "%Y-%m-%dT%H:%M:%S%z")
     #find the difference between the current time and the departure time
@@ -93,6 +95,9 @@ def boston_landing_to_south_station():
     id = "place-WML-0035"
     bound = 1
     results = get_predictions(id, bound)
+    if (results["data"] == []):
+        return "No trains", 0
+
     departure_time = results["data"][0]["attributes"]["departure_time"]
 
     stripped_departure_time = departure_time[11:16]
@@ -105,8 +110,8 @@ def boston_landing_to_south_station():
     return new_departure_time.strftime("%I:%M %p"), minute_difference
 
 
-print(south_station_to_boston_landing())
-print(boston_landing_to_south_station())
+print(south_station_to_boston_landing()[0])
+print(boston_landing_to_south_station()[0])
 
 #the pm and AM doesnt work for metrics, maybe make it a log then into a metric or something
 

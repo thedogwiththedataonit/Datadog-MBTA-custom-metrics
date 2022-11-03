@@ -33,9 +33,11 @@ def south_station_to_boston_landing():
     id = "NEC-2287"
     bound = 0
     results = get_predictions(id, bound)
+    if (results["data"] == []):
+        return "No trains", 0
     departure_time = results["data"][0]["attributes"]["departure_time"]
     new_departure_time = datetime.datetime.strptime(departure_time, "%Y-%m-%dT%H:%M:%S%z")
-        #find the difference between the current time and the departure time
+    #find the difference between the current time and the departure time
     stripped_departure_time = departure_time[11:16]
     current_time = datetime.datetime.now().strftime("%H:%M")
     time_difference = datetime.datetime.strptime(stripped_departure_time, "%H:%M") - datetime.datetime.strptime(current_time, "%H:%M")
@@ -49,6 +51,9 @@ def boston_landing_to_south_station():
     id = "place-WML-0035"
     bound = 1
     results = get_predictions(id, bound)
+    if (results["data"] == []):
+        return "No trains", 0
+
     departure_time = results["data"][0]["attributes"]["departure_time"]
 
     stripped_departure_time = departure_time[11:16]
@@ -61,15 +66,20 @@ def boston_landing_to_south_station():
     return new_departure_time.strftime("%I:%M %p"), minute_difference
 
 
-
 class ddogMetric(AgentCheck):
     def check(self, instance):
         ssToBL = (south_station_to_boston_landing())
-        BLToSS = (boston_landing_to_south_station())
+        blToSS = (boston_landing_to_south_station())
 
-        self.gauge('timeTillArrival_SouthStation', ssToBL[1])
-        self.gauge('timeTillArrival_BostonLanding', BLToSS[1])
+        if ssToBL[0] == "No trains":
+            logger.info("No trains")
 
-        logger.info('South Station to Boston Landing arriving at: ' + str(ssToBL[0]))
-        logger.info('Boston Landing to South Station arriving at: ' + str(BLToSS[0]))
+        elif blToSS[0] == "No trains":
+            logger.info("No trains")
+        else:                
+            self.gauge('timeTillArrival_SouthStation', ssToBL[1])
+            self.gauge('timeTillArrival_BostonLanding', blToSS[1])
+
+            logger.info('The train is leaving South Station at ' + str(ssToBL[0]) + " and is headed to Boston Landing")
+            logger.info('The train is leaving Boston Landing at ' + str(blToSS[0]) + " and is headed to South Station")
 
