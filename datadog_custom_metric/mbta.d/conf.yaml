@@ -1,6 +1,0 @@
-#/opt/datadog-agent/etc/conf.d
-
-init_config:
-
-instances:
-  - min_collection_interval: 100
