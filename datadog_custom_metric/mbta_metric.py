@@ -6,7 +6,7 @@ import sys
 import datetime
 
 logger = logging.getLogger()
-fileHandler = logging.FileHandler("/etc/dataog-agent/checks.d/mbta.log")
+fileHandler = logging.FileHandler("/etc/datadog-agent/checks.d/mbta.log")
 streamHandler = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 streamHandler.setFormatter(formatter)
@@ -46,8 +46,11 @@ def schedule(route, stop, bound):
     list_of_trip_ids = []
 
     for i in range(0, len(data["data"])):
-        if (data["data"][i]["attributes"]["arrival_time"] != None):
-            departure_time = data["data"][i]["attributes"]["arrival_time"]
+        if (data["data"][i]["attributes"]["departure_time"] == None):
+            return "No departure time"
+        else:
+            
+            departure_time = data["data"][i]["attributes"]["departure_time"]
             trip = data["data"][i]["relationships"]["trip"]["data"]["id"]
             new_departure_time = datetime.datetime.strptime(departure_time, "%Y-%m-%dT%H:%M:%S%z")
             current_time = datetime.datetime.now().strftime("%H:%M")
@@ -60,23 +63,23 @@ def schedule(route, stop, bound):
 
             #print(new_departure_time.strftime("%I:%M %p"), minute_difference, trip)
 
-    time_till_next_departure = min(list_of_times_till)
-    index = list_of_times_till.index(time_till_next_departure)
-    next_departure = list_of_departures[index]
-    trip_id = list_of_trip_ids[index]
-    next_prediction = (predict_stop(stop, bound, trip_id))
+            time_till_next_departure = min(list_of_times_till)
+            index = list_of_times_till.index(time_till_next_departure)
+            next_departure = list_of_departures[index]
+            trip_id = list_of_trip_ids[index]
+            next_prediction = (predict_stop(stop, bound, trip_id))
 
-    #remove index from list of departures and times till
-    list_of_departures.pop(index)
-    list_of_times_till.pop(index)
+            #remove index from list of departures and times till
+            list_of_departures.pop(index)
+            list_of_times_till.pop(index)
 
-    #second next departure
-    next_time_till_next_departure = min(list_of_times_till)
-    next_index = list_of_times_till.index(next_time_till_next_departure)
-    next_next_departure = list_of_departures[next_index]
+            #second next departure
+            next_time_till_next_departure = min(list_of_times_till)
+            next_index = list_of_times_till.index(next_time_till_next_departure)
+            next_next_departure = list_of_departures[next_index]
 
 
-    return next_departure, time_till_next_departure, next_prediction, next_next_departure, next_time_till_next_departure
+            return next_departure, time_till_next_departure, next_prediction, next_next_departure, next_time_till_next_departure
 
 def predict_stop(stop, bound, trip):
     url = "https://api-v3.mbta.com/predictions"
@@ -88,7 +91,7 @@ def predict_stop(stop, bound, trip):
     if (data["data"] == []):
         return "No prediction"
     else:
-        arrival_time = data["data"][0]["attributes"]["arrival_time"]
+        arrival_time = data["data"][0]["attributes"]["departure_time"]
         new_arrival_time = datetime.datetime.strptime(arrival_time, "%Y-%m-%dT%H:%M:%S%z")
         return new_arrival_time.strftime("%I:%M %p")
 
@@ -98,17 +101,11 @@ class ddogMetric(AgentCheck):
     def check(self, instance):
 
         alerts = (alerts_route("CR-Worcester", "place-WML-0035", "NEC-2287"))
-        inbound = (schedule("CR-Worcester", "place-WML-0035", 0))
-        outbound = (schedule("CR-Worcester", "NEC-2287", 1))
+        inbound = (schedule("CR-Worcester", "place-WML-0035", 1))
+        outbound = (schedule("CR-Worcester", "NEC-2287",0))
         
         for alert in alerts:
-            logger.info(alert,
-                        extra={
-                            "alert_header": alert["header"],
-                            "alert_effect": alert["effect"],
-                            "alert_description": alert["description"],
-                            "alert_type": "mbta_alert"
-                        })
+            logger.info(alert["effect"] | alert["header"] | alert["description"])
         
         time_till_next_inbound = inbound[1]
         time_till_next_outbound = outbound[1]
@@ -116,24 +113,8 @@ class ddogMetric(AgentCheck):
         time_till_next_next_outbound = outbound[4]
 
         logger.info('Next train from Boston Landing to South Station comes at ' + inbound[0] + ' and it is predicted to arrive at ' + inbound[2] + ' with ' + str(time_till_next_inbound) + ' minutes left',
-                    extra={
-                        "next_inbound": inbound[0],
-                        "next_inbound_prediction": inbound[2],
-                        "next_inbound_time_till": time_till_next_inbound,
-                        "next_next_inbound": inbound[3],
-                        "next_next_inbound_time_till": time_till_next_next_inbound,
-                        "type": "mbta_inbound",
-                        "env": "mbta"
-                    })
+                )
         logger.info('Next train from South Station to Boston Landing comes at ' + outbound[0] + ' and it is predicted to arrive at ' + outbound[2] + ' with ' + str(time_till_next_outbound) + ' minutes left',
-                    extra={
-                        "next_outbound": outbound[0],
-                        "next_outbound_prediction": outbound[2],
-                        "next_outbound_time_till": time_till_next_outbound,
-                        "next_next_outbound": outbound[3],
-                        "next_next_outbound_time_till": time_till_next_next_outbound,
-                        "type": "mbta_outbound",
-                        "env": "mbta"
-                    })            
+                    )            
         self.gauge('minutes_till_arrival_at_boston_landing', time_till_next_inbound, tags=['direction:inbound', "env:mbta"])
-        self.gauge('minutes_till_arrival_at_boston_landing', time_till_next_outbound, tags=['direction:outbound', "env:mbta"])
+        self.gauge('minutes_till_arrival_at_south_station', time_till_next_outbound, tags=['direction:outbound', "env:mbta"])
