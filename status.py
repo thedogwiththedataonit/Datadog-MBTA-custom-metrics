@@ -182,7 +182,7 @@ def predict_stop(stop, bound, trip):
     if (data["data"] == []):
         return "No prediction"
     else:
-        arrival_time = data["data"][0]["attributes"]["arrival_time"]
+        arrival_time = data["data"][0]["attributes"]["departure_time"]
         new_arrival_time = datetime.datetime.strptime(arrival_time, "%Y-%m-%dT%H:%M:%S%z")
         return new_arrival_time.strftime("%I:%M %p")
 
