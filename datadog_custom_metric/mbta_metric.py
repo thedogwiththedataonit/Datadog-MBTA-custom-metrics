@@ -2,18 +2,17 @@ import requests
 import json
 from checks import AgentCheck
 import logging
-import json_log_formatter
 import sys
 import datetime
 
-formatter = json_log_formatter.JSONFormatter()
-
-json_handler = logging.FileHandler(filename="/etc/dataog-agent/checks.d/mbta.log")
-json_handler.setFormatter(formatter)
-
-logger = logging.getLogger('my_json')
-logger.addHandler(json_handler)
-logger.setLevel(logging.INFO)
+logger = logging.getLogger()
+fileHandler = logging.FileHandler("/etc/dataog-agent/checks.d/mbta.log")
+streamHandler = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+streamHandler.setFormatter(formatter)
+fileHandler.setFormatter(formatter)
+logger.addHandler(streamHandler)
+logger.addHandler(fileHandler)
 
 def alerts_route(route, stop1, stop2):
     url = "https://api-v3.mbta.com/alerts"
