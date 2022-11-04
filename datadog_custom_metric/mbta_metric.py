@@ -52,8 +52,8 @@ def schedule(route, stop, bound):
             departure_time = data["data"][i]["attributes"]["departure_time"]
             trip = data["data"][i]["relationships"]["trip"]["data"]["id"]
             new_departure_time = datetime.datetime.strptime(departure_time, "%Y-%m-%dT%H:%M:%S%z")
-            #current_time = datetime.datetime.now().strftime("%H:%M") and subtract 5 hours
-            current_time = datetime.datetime.now() - datetime.timedelta(hours=5)
+            #current_time = datetime.datetime.now().strftime("%H:%M") and subtract 4 hours
+            current_time = datetime.datetime.now() - datetime.timedelta(hours=4)
             current_time = current_time.strftime("%H:%M")
             time_difference = datetime.datetime.strptime(departure_time[11:16], "%H:%M") - datetime.datetime.strptime(current_time, "%H:%M")
             minute_difference = time_difference.seconds // 60
